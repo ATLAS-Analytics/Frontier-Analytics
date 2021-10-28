@@ -1,1 +1,1 @@
-* 
+* Fix readme. a lot of obsolete things.
