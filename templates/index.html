@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="This is a real time monitoring tool for studying ATLAS Frontier system">
+  <meta name="author" content="Millissa Si Amer">
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+
+  <title> ATLAS Frontier Analytics Dashboard</title>
+
+  <!-- Custom fonts for this template-->
+  <link href={{ url_for('static', filename='vendor/fontawesome-free/css/all.min.css') }} rel="stylesheet"
+    type="text/css">
+  <link
+    href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+    rel="stylesheet">
+
+  <!-- Custom styles for this template-->
+  <link href={{ url_for('static', filename="css/frontier-analytics.css") }} rel="stylesheet">
+
+  <!-- multiple select Dropdown-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.8.1/css/bootstrap-select.css">
+
+  <!-- Custom styles for this page -->
+  <link href={{ url_for('static', filename="vendor/datatables/dataTables.bootstrap4.min.css") }} rel="stylesheet">
+
+
+  <script type="text/javascript" src={{ url_for('static', filename="vendor/socket/socket.io.min.js") }}></script>
+
+  <script type="text/javascript" charset="utf-8">
+    // create a socket connection with the server in order to visualize the data updates in all clients
+    var socket = io.connect();
+    socket.on('refreshPage', function (msg) {
+      console.log('refresh page');
+      location.reload(true);
+    });
+
+  </script>
+
+</head>
+
+<body id="page-top">
+
+  <!-- Page Wrapper -->
+  <div id="wrapper">
+
+    <!-- Sidebar -->
+    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+      <!-- Sidebar - Brand -->
+      <a class="sidebar-brand justify-content-center" href="/" style="height:220px;">
+        <div class="sidebar-brand sidebar-brand-icon">
+          <img src={{ url_for('static', filename="img/atlas.jpg") }} />
+        </div>
+        <div class="sidebar-brand-text  mx-3"> Frontier Analytics </div>
+      </a>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider my-0">
+
+      <!-- Nav Item - Dashboard -->
+      <li class="nav-item active">
+        <a class="nav-link" href="/">
+          <i class="fas fa-fw fa-tachometer-alt"></i>
+          <span>Discover</span></a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider">
+
+      <!-- Nav Item - visualize-->
+      <li class="nav-item">
+        <a class="nav-link" href='/Visualize'>
+          <i class="fas fa-fw fa-chart-area"></i>
+          <span>Visualize</span></a>
+      </li>
+
+
+      <!-- Nav Item - Caching Efficiency -->
+      <li class="nav-item">
+        <a class="nav-link" href='/CachingEfficiency'>
+          <i class="fas fa-fw fa-table"></i>
+          <span>Caching Efficiency</span></a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider d-none d-md-block">
+
+      <!-- Sidebar Toggler (Sidebar) -->
+      <div class="text-center d-none d-md-inline">
+        <button class="rounded-circle border-0" id="sidebarToggle"></button>
+      </div>
+
+    </ul>
+    <!-- End of Sidebar -->
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <!-- Main Content -->
+      <div id="content">
+        <br> </br>
+
+        <!-- Begin Page Content -->
+        <div class="container-fluid">
+
+          <!-- cards container -->
+          <div class="row">
+
+            <!--First column-->
+            <div class="col-lg-6">
+
+              <!-- Input Parameters  -->
+              <div class="card shadow mb-4">
+
+                <div class="card-header py-3">
+                  <h6 class="m-0 font-weight-bold text-primary">ElasticSearch Filters</h6>
+                </div>
+
+                <div class="card-body" id="loadFormCard">
+                  <!-- Input Parameters form -->
+                  <form class="user" method="post" action="http://localhost:5000/loadData" id="loadid">
+                    Search by Task :
+                    <br></br>
+                    <div class="form-group row">
+                      <div class="col-sm-6 mb-3 mb-sm-1">
+                        <input type="number" class="form-control form-control-user" name="Task_id"
+                          placeholder="Task ID">
+                      </div>
+                    </div>
+                    <hr>
+                    Search by time range :
+                    <br></br>
+                    <div class="form-group row">
+                      <div class="col-sm-6 mb-3 mb-sm-1">
+                        <input type="datetime-local" class="form-control form-control-user" name="Since"
+                          pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}" placeholder="YYYY-MM-DDTHH:MM">
+                      </div>
+                      <div class="col-sm-6">
+                        <input type="datetime-local" class="form-control form-control-user" name="Until"
+                          pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}" placeholder="YYYY-MM-DDTHH:MM">
+                      </div>
+                    </div>
+                    <hr>
+                    Choose Queries type:
+                    <br></br>
+                    <div class="form-group row">
+                      <div class="col-sm-6 mb-3 mb-sm-1">
+                        <select class="custom-select" name="Cached">
+                          <option value="All Queries" default>All Queries</option>
+                          <option value="Cached Queries">Cached Queries</option>
+                          <option value="Not Cached Queries">Not Cached Queries</option>
+                        </select>
+                      </div>
+                    </div>
+                    <hr>
+                    The parquet File name :
+                    <br></br>
+                    <div class="form-group row">
+                      <div class="col-sm-6 mb-3 mb-sm-1">
+                        <input type="text" class="form-control form-control-user" name="parquetName"
+                          placeholder="name.parquet" pattern=".*([.]parquet)$" required>
+                      </div>
+                    </div>
+                    <p> </p>
+                    <input type="submit" value="Extract Frontier logs " class="btn btn-primary btn-user btn-block"
+                      title="extract ElasticSearch logs data for the given inputs">
+                    <hr>
+                  </form>
+
+
+                </div>
+                <!-- end of card body -->
+              </div>
+              <!--  May be used in the future
+                       <div class="card shadow mb-4">
+
+                               <a href="#collapseCardConfig" class="d-block card-header py-3" data-toggle="collapse" role="button" aria-expanded="true" aria-controls="collapseCardExample">
+                                 <h6 class="m-0 font-weight-bold text-primary">Configuration</h6>
+                               </a>
+
+                               <div class="collapse" id="collapseCardConfig">
+                                 <div class="card-body">
+                                   <form class="user" action="/config" method="POST">
+                                         ElasticSearch configuration :
+                                         <br></br>
+                                         <div class="form-group row">
+
+                                           <div class="col-sm-6 mb-3 mb-sm-1">
+                                             <input type="text" class="form-control form-control-user" name="ES_host" placeholder=" host : atlas-kibana.mwt2.org">
+                                           </div>
+
+                                           <div class="col-sm-6">
+                                             <input type="number" class="form-control form-control-user" name="ES_port" placeholder="port : 9200">
+                                           </div>
+
+                                         </div>
+                                         <hr>
+                                         ElasticSearch indices :
+                                         <br></br>
+                                         <div class="form-group row">
+
+                                           <div class="col-sm-6 mb-3 mb-sm-1">
+                                             <input type="text" class="form-control form-control-user" name="ES_frontier_index" placeholder="frontier alias name">
+                                           </div>
+
+                                           <div class="col-sm-6">
+                                             <input type="text" class="form-control form-control-user" name="ES_caching_index" placeholder="caching efficiency index name">
+                                           </div>
+
+                                         </div>
+                                         <hr>
+                                         COOLR server address :
+                                         <br></br>
+
+                                         <div class="form-group row">
+
+                                           <div class="col-sm-6 mb-3 mb-sm-1">
+                                             <input type="text" class="form-control form-control-user" name="COOLR_server" placeholder="host: http://atlasfrontier08.cern.ch:8000/coolrapi">
+                                           </div>
+
+                                         </div>
+                                         <hr>
+                                         Max number of queries :
+                                         <br></br>
+
+                                         <div class="form-group row">
+
+                                           <div class="col-sm-6 mb-3 mb-sm-1">
+                                             <input type="number" class="form-control form-control-user" name="limit" placeholder="default: 5M">
+                                           </div>
+
+                                         </div>
+
+
+
+                                         <input type="submit" value="Configure" class="btn btn-primary btn-user btn-block" title='update the configuration file'>
+                                   </form>
+                                 </div>
+
+                               </div>
+
+                       </div>
+                    -->
+
+              <!-- Upload Frontier Logging data -->
+              <div class="card shadow mb-4">
+                <!-- Card Header - Accordion -->
+                <a href="#collapseCardUpload" class="d-block card-header py-3" data-toggle="collapse" role="button"
+                  aria-expanded="true" aria-controls="collapseCardExample">
+                  <h6 class="m-0 font-weight-bold text-primary">Upload Frontier Logging data</h6>
+                </a>
+                <div class="collapse" id="collapseCardUpload">
+                  <div class="card-body">
+                    You can upload a parquet file containing Frontier parsed queries :
+                    <br></br>
+                    <form method="POST" action="/uploadParquet" enctype="multipart/form-data">
+                      <div class="form-group files">
+                        <label>Upload Your File </label>
+                        <input type="file" name='parquetFileName' class="form-control">
+                      </div>
+                      <input type="submit" value="Upload" class="btn btn-primary btn-user "
+                        title='upload the parquet file and save it in the shared directory'>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              <!-- end of upload card-->
+
+            </div>
+            <!-- end of the first column -->
+
+
+
+            <div class="col-lg-6">
+              <!--the list of existing parquet file -->
+              <div class="card shadow mb-4">
+
+                <div class="card-header py-3">
+                  <h6 class="m-0 font-weight-bold text-primary">Parquet Files List</h6>
+                </div>
+
+                <div class="card-body">
+                  <div class="table-responsive" id='#ParquetTable'>
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                      <thead>
+                        <tr>
+                          <th>Parquet File Name</th>
+                          <th>size (MB)</th>
+                          <th>Created</th>
+                          <th>Delete</th>
+                          <th>Download</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for file, date, size in parquetFilesList %}
+                        <tr>
+                          <td>{{ file }}</td>
+                          <td>{{"{0:.2f}".format(size)}}</td>
+                          <td>{{ date }}</td>
+                          <td>
+                            <a href='#' class="btn btn-danger btn-circle btn-sm"
+                              onclick='updateClient(socket,{{ file | tojson | safe}})' title='delete'>
+                              <i class="fas fa-trash"></i>
+                            </a>
+
+                          </td>
+                          <td>
+                            <a href='/downloadParquet?parquetFileName={{file}}'
+                              class="btn btn-success btn-circle btn-sm" title='download'>
+                              <i class="fas fa-download"></i>
+                            </a>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+                <!-- end of card body -->
+              </div>
+              <!-- end Parquet Files card -->
+
+
+
+            </div>
+            <!-- end of second column-->
+
+          </div>
+          <!-- end of row -->
+        </div>
+        <!-- /.container-fluid -->
+
+      </div>
+      <!-- End of Main Content -->
+
+      <!-- Footer -->
+      <footer class="sticky-footer bg-white">
+        <div class="container my-auto">
+          <div class="copyright text-center my-auto">
+            <span>ATLAS &copy; Frontier Analytics 2019</span>
+          </div>
+        </div>
+      </footer>
+      <!-- End of Footer -->
+
+    </div>
+    <!-- End of Content Wrapper -->
+
+  </div>
+  <!-- End of Page Wrapper -->
+
+  <!-- Scroll to Top Button-->
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+  <!-- Bootstrap core JavaScript-->
+  <script src={{ url_for('static', filename="vendor/jquery/jquery.min.js") }}></script>
+  <script src={{ url_for('static', filename="vendor/bootstrap/js/bootstrap.bundle.min.js") }}></script>
+
+
+  <!-- Progress bar js -->
+  <script src={{ url_for('static', filename="vendor/ProgressBar/nanobar.min.js") }}></script>
+  <!-- Page level plugins -->
+  <script src={{ url_for('static', filename="vendor/datatables/jquery.dataTables.min.js") }}></script>
+  <script src={{ url_for('static', filename="vendor/datatables/dataTables.bootstrap4.min.js") }}></script>
+
+  <!-- Core plugin JavaScript-->
+  <script src={{ url_for('static', filename="vendor/jquery-easing/jquery.easing.min.js") }}></script>
+
+  <!-- Custom scripts for all pages-->
+  <script src={{ url_for('static', filename="js/frontier-analytics.js") }}></script>
+
+  <!-- Page level custom scripts -->
+  <script src={{ url_for('static', filename="js/demo/datatables-demo.js") }}></script>
+  <script type="text/javascript" charset="utf-8">
+    ExtractingProgress();
+  </script>
+
+
+</body>
+
+</html>

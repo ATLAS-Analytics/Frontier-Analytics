@@ -1,4 +1,6 @@
+# TODO
 
+* remove all the thousand files from static
 * Remove all the config creating nonsense. Have only one config.
 * Check the timeouts
 * Check if Redis slave is needed

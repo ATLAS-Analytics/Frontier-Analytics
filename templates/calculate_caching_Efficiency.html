@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="This is a real time monitoring tool for studying ATLAS Frontier system">
+  <meta name="author" content="Millissa Si Amer">
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+
+  <title> calculate Caching Efficiency page</title>
+
+  <!-- Custom fonts for this template-->
+  <link   href={{ url_for('static', filename='vendor/fontawesome-free/css/all.min.css') }} rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+  <!-- Custom styles for this page -->
+  <link href={{ url_for('static', filename="vendor/datatables/dataTables.bootstrap4.min.css") }} rel="stylesheet">
+  <link rel="stylesheet" href={{ url_for('static', filename="css/bootstrap-select.css") }}  />
+
+
+  <!-- Custom styles for this template-->
+  <link href={{ url_for('static', filename="css/frontier-analytics.css") }} rel="stylesheet">
+
+  <!-- Custom scripts for all pages-->
+  <script src={{ url_for('static', filename="vendor/jquery/jquery.min.js") }}></script>
+  <script src={{ url_for('static', filename="js/frontier-analytics.js") }}></script>
+  <!-- Bootstrap core JavaScript-->
+
+  <script src={{ url_for('static', filename="vendor/bootstrap/js/bootstrap.bundle.min.js") }}></script>
+  <!-- Core plugin JavaScript-->
+  <script src={{ url_for('static', filename="vendor/jquery-easing/jquery.easing.min.js") }}></script>
+  <!-- Page level plugins -->
+  <script src={{ url_for('static', filename="vendor/datatables/jquery.dataTables.min.js") }}></script>
+  <script src={{ url_for('static', filename="vendor/datatables/dataTables.bootstrap4.min.js") }}></script>
+  <!-- Page level custom scripts -->
+  <script src={{ url_for('static', filename="js/demo/datatables-demo.js") }}></script>
+
+
+  <script src={{ url_for('static', filename="js/bootstrap-select.min.js") }}></script>
+
+
+  <!-- Variables -->
+  <script>
+    var file_path = null ;
+    var folders = {{foldersList | tojson | safe}} ;
+    var Coolr = {{ CoolrData | safe }};
+    var db = 'CONDBR2';
+    var schema = Object.keys(Coolr[db])[0];
+    var data = '' ;
+    var dataframe = {};
+    var task_id_caching = 0;
+  </script>
+
+
+
+
+
+</head>
+
+<body id="page-top">
+
+  <!-- Page Wrapper -->
+  <div id="wrapper">
+
+    <!-- Sidebar -->
+    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+      <!-- Sidebar - Brand -->
+      <a class="sidebar-brand justify-content-center" href="/" style="height:220px;">
+        <div class="sidebar-brand sidebar-brand-icon">
+          <img  src={{ url_for('static', filename="img/atlas.jpg") }}/>
+        </div>
+        <div class="sidebar-brand-text  mx-3"> Frontier Analytics </div>
+      </a>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider my-0">
+
+      <!-- Nav Item - Dashboard -->
+      <li class="nav-item active">
+        <a class="nav-link" href="/">
+          <i class="fas fa-fw fa-tachometer-alt"></i>
+          <span>Discover</span></a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider">
+
+      <!-- Nav Item - visualize-->
+      <li class="nav-item">
+        <a class="nav-link" href='/Visualize'>
+          <i class="fas fa-fw fa-chart-area"></i>
+          <span>Visualize</span></a>
+      </li>
+
+
+      <!-- Nav Item - Caching Efficiency -->
+      <li class="nav-item">
+        <a class="nav-link" href='/CachingEfficiency'>
+          <i class="fas fa-fw fa-table"></i>
+          <span>Caching Efficiency</span></a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider d-none d-md-block">
+
+
+    </ul>
+    <!-- End of Sidebar -->
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <!-- Main Content -->
+      <div id="content">
+        <!-- Begin Page Content -->
+        <div class="container-fluid">
+          <br></br>
+        <!-- Page Heading -->
+        <h1 class="h3 mb-2 text-gray-800">Calculate Caching Efficiency</h1>
+        <p class="mb-4"> Please select a parquet File and a list of folders to calculate the caching efficiency; you can save the results in ElasticSearch by clicking on the "save" button.</p>
+
+        <!-- DataTales Example -->
+        <div class="card shadow mb-4">
+          <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Parquet Files</h6>
+          </div>
+          <div class="card-body">
+                <div class="table-responsive" id='#ParquetTable'>
+                  <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                      <tr>
+                        <th>Parquet File Name</th>
+                        <th>size (MB)</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                       {% for file, date, size in parquetFilesList %}
+                      <tr>
+                        <td>
+                          <a href='' onclick='parquetFileSelected({{file | tojson | safe}});' >
+                              {{ file }}
+                          </a>
+                        </td>
+                        <td>{{"{0:.2f}".format(size)}}</td>
+                        <td>{{ date }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+
+                </div>
+         </div>
+        </div>
+
+        <!--This card will appear once we selected a file (manage how to change a file after selection)-->
+        <div class="card shadow mb-4" style="display:none;" id='folders'>
+          <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary" id='Filename'> </h6>
+          </div>
+          <div class="card-body" id='folderSection'>
+              <form class="user" onsubmit="calculateCachingEfficiency();" id='selectFolderForm'>
+                    Select Folders :
+                    <br></br>
+
+                    <div class="form-group row">
+
+                      <div class="col-sm-6 mb-3 ">
+                        <select class="form-control bootstrap-select selectpicker" name='selectFolder'  id='selectFolder' multiple data-live-search="true">
+                            <script>
+                                  loadFolders(folders);
+                            </script>
+                        </select>
+                      </div>
+                      <div class="col-sm-2 mb-3 ">
+                        <button type="submit" value="calculate" class="btn btn-primary btn-block btn-user">calculate</button>
+                      </div>
+                      <div class="col-sm-2 mb-3 ">
+                        <button  value="stop" class="btn btn-danger btn-block btn-user" id="stopCalculatingCaching" onclick="stopCalculatingCachingEfficiency(task_id_caching)" disabled>stop</button>
+                      </div>
+                    </div>
+              </form>
+              <hr>
+              <form class="user" onsubmit="AddNewFolder();" id='addFolderForm'>
+                    Add a new Folder to the list:
+                    <br></br>
+                    <div class="form-group row">
+                                <div class="col-sm-2 mb-1 ">
+                                  <select class="custom-select" name="db" id='db_list' onchange="var db = document.getElementById('db_list').value; DisplaySchemasOptions('schema_list', db, Coolr) ; ">
+                                    <script>
+                                           DisplayDbsOptions('db_list', Coolr);
+                                    </script>
+                                  </select>
+                                </div>
+
+                                <div class="col-sm-3 mb-1 ">
+                                  <select class="custom-select" name="schema" id="schema_list" onchange="var db = document.getElementById('db_list').value; var schema = document.getElementById('schema_list').value; DisplayNodesOptions('nodes_list', db, schema, Coolr) ;">
+                                    <script>
+                                           DisplaySchemasOptions('schema_list', db, Coolr)
+                                    </script>
+                                  </select>
+                                </div>
+
+                                <div class="col-sm-3 mb-1 " >
+                                  <select class="custom-select" name="node" id="nodes_list">
+                                    <script>
+                                           DisplayNodesOptions('nodes_list', db, schema, Coolr)
+                                    </script>
+                                  </select>
+                                </div>
+                                <div class="col-sm-2 mb-1 ">
+                                     <button type="submit" value="add" class="btn btn-primary btn-block btn-user">add</button>
+                               </div>
+                               <div class="col-sm-2">
+                                    <button  value="remove" class="btn btn-danger btn-block btn-user" onclick="var db = document.getElementById('db_list').value; var schema = document.getElementById('schema_list').value; var node = document.getElementById('nodes_list').value;removeFolderFromList(db,schema,node);">remove</button>
+                              </div>
+                   </div>
+
+              </form>
+         </div>
+        </div>
+
+        <!-- This will appear one we click on calculate -->
+        <div class="card shadow mb-4" style="display:none;" id='Results'>
+          <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Results</h6>
+          </div>
+          <div class="card-body" id="resultsSection">
+                <div class="table-responsive">
+                  <table class="table table-bordered" width="100%" cellspacing="0">
+                      <thead>
+                        <tr>
+                          <th>Folder</th>
+                          <th>#Queries</th>
+                          <th>#Different Queries</th>
+                          <th>#Different Payloads</th>
+                          <th>Payload size</th>
+                        </tr>
+                      </thead>
+                      <tbody id='TableBody'>
+                      </tbody>
+                  </table>
+                </div>
+                <div class="form-group row">
+                    <div class="col-sm-1">
+                        <input type="submit" class="btn  btn-success btn-user btn-block " value="save" title="save data into Elasticsearch" onclick="save_cachingEfficiency_data(file_path, dataframe);">
+                    </div>
+                </div>
+         </div>
+        </div>
+
+      </div>
+      <!-- /.container-fluid -->
+      </div>
+      <!-- End of Main Content -->
+
+      <!-- Footer -->
+      <footer class="sticky-footer bg-white">
+        <div class="container my-auto">
+          <div class="copyright text-center my-auto">
+            <span>ATLAS &copy; Frontier Analytics 2019</span>
+          </div>
+        </div>
+      </footer>
+      <!-- End of Footer -->
+
+    </div>
+    <!-- End of Content Wrapper -->
+
+  </div>
+  <!-- End of Page Wrapper -->
+
+  <!-- Scroll to Top Button-->
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+
+
+</body>
+
+</html>

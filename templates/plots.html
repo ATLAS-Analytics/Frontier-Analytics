@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="This is a real time monitoring tool for studying ATLAS Frontier system">
+  <meta name="author" content="Millissa Si Amer">
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+
+  <title> Plots page</title>
+
+  <!-- Custom fonts for this template-->
+  <link   href={{ url_for('static', filename='vendor/fontawesome-free/css/all.min.css') }} rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+  <!-- Custom styles for this template-->
+  <link href={{ url_for('static', filename="css/frontier-analytics.css") }} rel="stylesheet">
+
+  <!-- Plotly JS Library-->
+  <script src={{ url_for('static', filename="vendor/chart.js/plotly.min.js") }}></script>
+
+  <!-- Bootstrap core JavaScript-->
+  <script src={{ url_for('static', filename="vendor/jquery/jquery.min.js") }}></script>
+  <script src={{ url_for('static', filename="vendor/bootstrap/js/bootstrap.bundle.min.js") }}></script>
+  <!-- Core plugin JavaScript-->
+  <script src={{ url_for('static', filename="vendor/jquery-easing/jquery.easing.min.js") }}></script>
+
+  <!-- Custom scripts for all pages-->
+  <script src={{ url_for('static', filename="js/frontier-analytics.js") }}></script>
+
+  <!-- Custom scripts for plots-->
+  <script src={{ url_for('static', filename="js/plots_functions.js") }}></script>
+
+  <!-- variables -->
+  <script>
+    // Global variables (default value)
+    var db = 'CONDBR2';
+    var task = null;
+    var Coolr = {{ CoolrData | safe }};
+    console.log(Coolr);
+    var schema = Object.keys(Coolr[db])[0];
+    var session_ID = {{ SessionID | tojson | safe}};
+
+    $(window).on("unload", function(e) {
+     $.ajax({
+         type: 'POST',
+         url: '/Plots/deleteSession',
+         data: {'userID' : session_ID},
+         success: function(data) {
+             console.log('session closed!');
+         },
+         error: function() {
+             console.log('Unexpected error');
+         }
+     });
+    });
+  </script>
+
+</head>
+
+<body id="page-top">
+
+  <!-- Page Wrapper -->
+  <div id="wrapper">
+
+    <!-- Sidebar -->
+    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+      <!-- Sidebar - Brand -->
+      <a class="sidebar-brand justify-content-center" href="/" style="height:220px;">
+        <div class="sidebar-brand sidebar-brand-icon">
+          <img  src={{ url_for('static', filename="img/atlas.jpg") }}/>
+        </div>
+        <div class="sidebar-brand-text  mx-3"> Frontier Analytics </div>
+      </a>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider my-0">
+
+      <!-- Nav Item - Dashboard -->
+      <li class="nav-item active">
+        <a class="nav-link"  href="/">
+          <i class="fas fa-fw fa-tachometer-alt"></i>
+          <span>Discover</span></a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider">
+
+      <!-- Nav Item - visualize-->
+      <li class="nav-item">
+        <a class="nav-link" href='/Visualize'>
+          <i class="fas fa-fw fa-chart-area"></i>
+          <span>Visualize</span></a>
+      </li>
+
+
+      <!-- Nav Item - Caching Efficiency -->
+      <li class="nav-item">
+        <a class="nav-link" href='/CachingEfficiency'>
+          <i class="fas fa-fw fa-table"></i>
+          <span>Caching Efficiency</span></a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider d-none d-md-block">
+
+
+    </ul>
+    <!-- End of Sidebar -->
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <!-- Main Content -->
+      <div id="content">
+        <!-- Topbar -->
+        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+        <!-- Topbar Navbar -->
+
+            <ul class="nav navbar-nav nav-tabs" >
+
+              <!-- Nav Item - Count of Queries -->
+              <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#countQueries" >Count of Queries</a>
+              </li>
+
+              <!-- Nav Item - Time distribution -->
+              <li class="nav-item ">
+                <a class="nav-link" data-toggle="tab" href="#Timedistribution" onclick="AutoSizePlot('Timedistribution',[ 'timedistr','queriesQueryTime', 'queriesDBtime'])" >Time distribution</a>
+              </li>
+
+              <!-- Nav Item - Size distribution -->
+              <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#Sizedistribution" onclick="AutoSizePlot('Sizedistribution',[ 'sizeDistr', 'sizePercentageSchema', 'sizePercentageNode'])">Size distribution</a>
+              </li>
+
+              <!-- Nav Item - High Query Time-->
+              <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#Highquerytime" onclick="AutoSizePlot('Highquerytime',[ 'highQueryTimeSchema', 'highQueryTimeNode' ])" >High Query Time</a>
+              </li>
+
+            </ul>
+
+      </nav>
+      <!-- End of Topbar -->
+
+      <!-- Begin Page Content -->
+      <div class="container-fluid tab-content">
+
+          <div class='tab-pane active'  id='countQueries'>
+              <!-- cards container -->
+              <div class="row">
+
+                  <!--First column-->
+                  <div class="col-lg-6">
+
+                          <!--Count of the queries per COOL instance (db) -->
+                          <div class="card shadow mb-4">
+
+                                  <div class="card-header py-3">
+                                    <div class='row'>
+                                          <div class="col-sm-6 mb-2 mb-sm-1">
+                                                <h6 class="m-0 font-weight-bold text-primary"> Count of queries per COOL instance (db)</h6>
+                                          </div>
+                                          <div class="col-sm-3-plot">
+                                                <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                  <input type="checkbox" class="custom-control-input" id='log_countQueries_perDBs' name="log_countQueries_perDBs" onchange="ChangeLogScale('COOLDBs','select_countQueries_perDBs','log_countQueries_perDBs')"/>
+                                                  <label class="custom-control-label" for="log_countQueries_perDBs">log scale</label>
+                                                </div>
+                                          </div>
+                                          <div class="col-sm-3-plot">
+                                                <select class="header-select" name="type" id='select_countQueries_perDBs' onchange="ChangePlotType('COOLDBs','select_countQueries_perDBs')" >
+                                                  <option value="bar group" default>Bar</option>
+                                                  <option value="scatter markers">Scatter (markers)</option>
+                                                </select>
+                                          </div>
+                                    </div>
+                                  </div>
+
+                                  <div class="card-body">
+                                          <!--the plot div -->
+                                          <div  id='COOLDBs'>
+                                             <script>
+                                                   // initialize plots
+                                                   getCoolDbsCount(session_ID , task);
+                                             </script>
+                                          </div>
+
+                                          <hr>
+                                          <form class="user" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_COOlDBs').value ; getCoolDbsCount(session_ID, task_id);">
+                                            <div class="form-group row">
+                                              <div class="col-sm-3 mb-3 ">
+                                                <input type="number" class="form-control form-control-user" id='task_input_COOlDBs' name="task" placeholder="Task ID" >
+                                              </div>
+                                              <div class="col-sm-3 ">
+                                                <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 3%;">
+                                                  <i class="fas fa-fw fa-chart-area" ></i>
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </form>
+
+
+                                   </div>
+                                  <!-- end of card body -->
+                          </div>
+                           <!-- end of  card -->
+
+                           <!-- Count of queries per schema -->
+                           <div class="card shadow mb-4">
+
+                                   <div class="card-header py-3">
+                                     <div class='row'>
+                                           <div class="col-sm-6 mb-2 mb-sm-1">
+                                                 <h6 class="m-0 font-weight-bold text-primary"> Count of queries per schema</h6>
+                                           </div>
+                                           <div class="col-sm-3-plot">
+                                                 <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                   <input type="checkbox" class="custom-control-input" id="log_countQueries_perSchema" name="log_countQueries_perSchema" onchange="ChangeLogScale('queriesPerSchema','select_countQueries_perSchema','log_countQueries_perSchema')"/>
+                                                   <label class="custom-control-label" for="log_countQueries_perSchema">log scale</label>
+                                                 </div>
+                                           </div>
+                                           <div class="col-sm-3-plot">
+                                                 <select class="header-select" name="type" id='select_countQueries_perSchema' onchange="ChangePlotType('queriesPerSchema','select_countQueries_perSchema')">
+                                                   <option value="pie none" default>Pie</option>
+                                                   <option value="bar group" >Bar</option>
+                                                   <option value="scatter markers">Scatter</option>
+
+                                                 </select>
+                                           </div>
+                                     </div>
+
+
+                                   </div>
+
+                                   <div class="card-body">
+
+                                     <!--the plot div -->
+                                        <div id='queriesPerSchema' >
+                                            <script>
+                                                   getCountQueriesPerSchema(session_ID, db, task) ;
+                                            </script>
+                                        </div>
+
+                                        <hr>
+                                        <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_queriesPerSchema').value ; console.log(task_id); var db = document.getElementById('select_input_queriesPerSchema').value; getCountQueriesPerSchema(session_ID ,db, task_id);" >
+                                          <div class="form-group row">
+                                            <div class="col-sm-3 mb-3 mb-sm-1">
+                                              <select class="custom-select" name="db" id='select_input_queriesPerSchema'>
+                                                <script>
+                                                       DisplayDbsOptions('select_input_queriesPerSchema',Coolr);
+                                                </script>
+                                              </select>
+                                            </div>
+                                            <div class="col-sm-3 mb-3 ">
+                                              <input type="number" class="form-control form-control-user" name="task_id" id='task_input_queriesPerSchema' placeholder="Task ID" >
+                                            </div>
+                                            <div class="col-sm-3 ">
+                                              <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 3%;">
+                                                <i class="fas fa-fw fa-chart-area" ></i>
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </form>
+
+
+
+                                    </div>
+                                   <!-- end of card body -->
+                           </div>
+                            <!-- end of  card -->
+
+                            <!-- Count of non-payload queries per node for a giver db/schema -->
+                            <div class="card shadow mb-4">
+
+                                    <div class="card-header py-3">
+                                      <div class='row'>
+                                            <div class="col-sm-6 mb-2 mb-sm-1">
+                                                   <h6 class="m-0 font-weight-bold text-primary"> Count of non-payload queries per node for a giver db/schema</h6>
+                                            </div>
+                                            <div class="col-sm-3-plot">
+                                                  <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                    <input type="checkbox" class="custom-control-input" id="log_non_payload_node" name="log_non_payload_node" onchange="ChangeLogScale('non_payload_queries_node','select_non_payload_node','log_non_payload_node')"/>
+                                                    <label class="custom-control-label" for="log_non_payload_node">log scale</label>
+                                                  </div>
+                                            </div>
+                                            <div class="col-sm-3-plot">
+                                                  <select class="header-select" name="type" id='select_non_payload_node' onchange="ChangePlotType('non_payload_queries_node','select_non_payload_node')">
+                                                    <option value="bar group" default>Bar</option>
+                                                    <option value="scatter markers">Scatter</option>
+                                                  </select>
+                                            </div>
+                                      </div>
+
+
+                                    </div>
+
+                                    <div class="card-body">
+                                      <!--the plot div -->
+                                         <div id='non_payload_queries_node' >
+                                             <script>
+                                                   db = 'CONDBR2';
+                                                   task = null;
+                                                   schema = Object.keys(Coolr[db])[0];
+                                                   getNonPayloadQueryNode(session_ID ,db , schema, task);
+                                             </script>
+                                         </div>
+                                         <hr>
+                                         <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_non_payload_node').value ; console.log(task_id);  var db = document.getElementById('select_input_non_payload_node').value; var schema =document.getElementById('select_input_non_payload_queries_node').value;  getNonPayloadQueryNode(session_ID ,db, schema, task_id);" >
+                                           <div class="form-group row">
+                                             <div class="col-sm-3 mb-3 mb-sm-1">
+                                               <select class="custom-select" name="db" id="select_input_non_payload_node" onchange="var db = document.getElementById('select_input_non_payload_node').value; DisplaySchemasOptions('select_input_non_payload_queries_node', db, Coolr) ; ">
+                                                 <script>
+                                                      DisplayDbsOptions('select_input_non_payload_node',Coolr);
+                                                 </script>
+                                               </select>
+                                             </div>
+                                             <div class="col-sm-3 mb-3 mb-sm-1">
+                                               <select class="custom-select" name="schema" id="select_input_non_payload_queries_node">
+                                                 <script>
+                                                        DisplaySchemasOptions('select_input_non_payload_queries_node', db, Coolr)
+                                                 </script>
+                                               </select>
+                                             </div>
+                                             <div class="col-sm-3 mb-3 ">
+                                               <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id="task_input_non_payload_node">
+                                             </div>
+                                             <div class="col-sm-3 ">
+                                               <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 1%;">
+                                                 <i class="fas fa-fw fa-chart-area" ></i>
+                                               </button>
+                                             </div>
+                                           </div>
+                                         </form>
+
+
+
+                                     </div>
+                                    <!-- end of card body -->
+                            </div>
+                             <!-- end of  card -->
+
+
+
+
+                  </div>
+
+                  <!--second column-->
+                  <div class="col-lg-6">
+                                        <!-- Count of not cached queries per type for a given COOL instance -->
+                                        <div class="card shadow mb-4">
+                                                       <div class="card-header py-3">
+                                                         <div class='row'>
+                                                               <div class="col-sm-6 mb-2 mb-sm-1">
+                                                                     <h6 class="m-0 font-weight-bold text-primary"> Count of not cached queries per type for a given COOL instance </h6>
+                                                               </div>
+                                                               <div class="col-sm-3-plot">
+                                                                     <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                                       <input type="checkbox" class="custom-control-input"  id="log_countQueries_pertype" name="log_countQueries_pertype"  onchange="ChangeLogScale('NotCachedQueriesPerType','select_countQueries_pertype','log_countQueries_pertype')"/>
+                                                                       <label class="custom-control-label" for="log_countQueries_pertype">log scale</label>
+                                                                     </div>
+                                                               </div>
+                                                               <div class="col-sm-3-plot">
+                                                                     <select class="header-select" name="type" id='select_countQueries_pertype' onchange="ChangePlotType('NotCachedQueriesPerType','select_countQueries_pertype')">
+                                                                       <option value="bar group" default>Bar</option>
+                                                                       <option value="scater markers" default>Scatter (markers)</option>
+                                                                     </select>
+                                                               </div>
+                                                         </div>
+
+                                                       </div>
+
+                                                       <div class="card-body">
+
+                                                            <!--the plot div -->
+                                                               <div id='NotCachedQueriesPerType' >
+                                                                   <script>
+                                                                         db = 'CONDBR2';
+                                                                         task = null;
+                                                                         getCountNotCachedPerTypeForDb(session_ID ,db, task);
+                                                                   </script>
+                                                               </div>
+                                                               <hr>
+
+                                                               <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_queriesPerType').value ; console.log(task_id); var db = document.getElementById('select_input_queriesPerType').value; getCountNotCachedPerTypeForDb(session_ID ,db, task_id); ">
+                                                                 <div class="form-group row">
+                                                                   <div class="col-sm-3 mb-3 mb-sm-1">
+                                                                     <select class="custom-select" name="db" id='select_input_queriesPerType'>
+                                                                       <script>
+                                                                             DisplayDbsOptions('select_input_queriesPerType',Coolr);
+                                                                       </script>
+                                                                     </select>
+                                                                   </div>
+                                                                   <div class="col-sm-3 mb-3 ">
+                                                                     <input type="number" class="form-control form-control-user" name="task_id" id='task_input_queriesPerType' placeholder="Task ID" >
+                                                                   </div>
+                                                                   <div class="col-sm-3 ">
+                                                                     <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 3%;">
+                                                                       <i class="fas fa-fw fa-chart-area" ></i>
+                                                                     </button>
+                                                                   </div>
+                                                                 </div>
+                                                               </form>
+
+
+
+                                                        </div>
+                                                       <!-- end of card body -->
+                                               </div>
+                                                <!-- end of  card -->
+
+
+
+                                             <!-- Query percentage per schema -->
+                                             <div class="card shadow mb-4">
+
+                                                     <div class="card-header py-3">
+                                                       <div class='row'>
+                                                             <div class="col-sm-6 mb-2 mb-sm-1">
+                                                                    <h6 class="m-0 font-weight-bold text-primary"> Query percentage per schema</h6>
+                                                             </div>
+                                                             <div class="col-sm-3-plot">
+                                                                   <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                                     <input type="checkbox" class="custom-control-input" id="log_Percentage_Schema" name="log_Percentage_Schema" onchange="ChangeLogScale('queriesPercentagePerSchema','select_queryPercentage_perSchema','log_Percentage_Schema')"/>
+                                                                     <label class="custom-control-label" for="log_Percentage_Schema">log scale</label>
+                                                                   </div>
+                                                             </div>
+                                                             <div class="col-sm-3-plot">
+                                                                   <select class="header-select" name="type" id='select_queryPercentage_perSchema' onchange="ChangePlotType('queriesPercentagePerSchema','select_queryPercentage_perSchema')">
+                                                                     <option value="bar group" default>Bar</option>
+                                                                     <option value="scatter markers+lines">Line/Scatter</option>
+                                                                   </select>
+                                                             </div>
+                                                       </div>
+
+
+                                                     </div>
+
+                                                     <div class="card-body">
+                                                       <!--the plot div -->
+                                                          <div id='queriesPercentagePerSchema' >
+                                                              <script>
+                                                                    db = 'CONDBR2';
+                                                                    task = null;
+                                                                    getQueryPercPerSchema(session_ID ,db ,task);
+                                                              </script>
+                                                          </div>
+                                                          <hr>
+                                                          <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_QueryPercentageSchema').value ; var db = document.getElementById('select_input_QueryPercentageSchema').value; getQueryPercPerSchema(session_ID ,db, task_id);">
+                                                            <div class="form-group row">
+                                                              <div class="col-sm-3 mb-3 mb-sm-1">
+                                                                <select class="custom-select" name="db" id='select_input_QueryPercentageSchema'>
+                                                                  <script>
+                                                                        DisplayDbsOptions('select_input_QueryPercentageSchema',Coolr);
+                                                                  </script>
+                                                                </select>
+                                                              </div>
+                                                              <div class="col-sm-3 mb-3 ">
+                                                                <input type="number" class="form-control form-control-user" name="task_id" id='task_input_QueryPercentageSchema' placeholder="Task ID" >
+                                                              </div>
+                                                              <div class="col-sm-3 ">
+                                                                <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 3%;">
+                                                                  <i class="fas fa-fw fa-chart-area" ></i>
+                                                                </button>
+                                                              </div>
+                                                            </div>
+                                                          </form>
+
+
+
+                                                      </div>
+                                                     <!-- end of card body -->
+                                             </div>
+                                              <!-- end of  card -->
+
+                                              <!-- Count of non-payload queries per schema -->
+                                              <div class="card shadow mb-4">
+
+                                                      <div class="card-header py-3">
+                                                        <div class='row'>
+                                                              <div class="col-sm-6 mb-2 mb-sm-1">
+                                                                     <h6 class="m-0 font-weight-bold text-primary"> Count of non-payload queries per schema</h6>
+                                                              </div>
+                                                              <div class="col-sm-3-plot">
+                                                                    <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                                      <input type="checkbox" class="custom-control-input" id="log_non_payload" name="log_non_payload" onchange="ChangeLogScale('non_payload_queries','select_non_payload','log_non_payload')"/>
+                                                                      <label class="custom-control-label" for="log_non_payload">log scale</label>
+                                                                    </div>
+                                                              </div>
+                                                              <div class="col-sm-3-plot">
+                                                                    <select class="header-select" name="type" id='select_non_payload' onchange="ChangePlotType('non_payload_queries','select_non_payload')">
+                                                                      <option value="bar group" default>Bar</option>
+                                                                      <option value="scatter markers">Scatter</option>
+                                                                    </select>
+                                                              </div>
+                                                        </div>
+
+
+                                                      </div>
+
+                                                      <div class="card-body">
+                                                        <!--the plot div -->
+                                                           <div id='non_payload_queries' >
+                                                               <script>
+                                                                     db = 'CONDBR2';
+                                                                     task = null;
+                                                                     getNonPayloadQuerySchema(session_ID ,db ,task);
+                                                               </script>
+                                                           </div>
+                                                           <hr>
+                                                           <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_non_payload').value ; var db = document.getElementById('select_input_non_payload').value; getNonPayloadQuerySchema(session_ID ,db, task_id);">
+                                                             <div class="form-group row">
+                                                               <div class="col-sm-3 mb-3 mb-sm-1">
+                                                                 <select class="custom-select" name="db" id='select_input_non_payload'>
+                                                                   <script>
+                                                                         DisplayDbsOptions('select_input_non_payload',Coolr);
+                                                                   </script>
+                                                                 </select>
+                                                               </div>
+                                                               <div class="col-sm-3 mb-3 ">
+                                                                 <input type="number" class="form-control form-control-user" name="task_id" id='task_input_non_payload' placeholder="Task ID" >
+                                                               </div>
+                                                               <div class="col-sm-3 ">
+                                                                 <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 3%;">
+                                                                   <i class="fas fa-fw fa-chart-area" ></i>
+                                                                 </button>
+                                                               </div>
+                                                             </div>
+                                                           </form>
+
+
+
+                                                       </div>
+                                                      <!-- end of card body -->
+                                              </div>
+                                               <!-- end of  card -->
+
+
+
+                     </div>
+
+
+
+                        <!--Third column-->
+                        <div class="col-lg-12">
+
+
+                                              <!-- Query Percentage per Node for a given DB/Schema -->
+                                              <div class="card shadow mb-4">
+
+                                                      <div class="card-header py-3">
+                                                        <div class='row'>
+                                                              <div class="col-sm-6 mb-2 mb-sm-1">
+                                                                    <h6 class="m-0 font-weight-bold text-primary">  Query Percentage per Node for a given DB/Schema  </h6>
+                                                              </div>
+                                                              <div class="col-sm-3-plot">
+                                                                    <div class="custom-control custom-switch " style="margin-top: 2%;">
+                                                                      <input type="checkbox" class="custom-control-input" id="log_Percentage_Schema_Node" name="log_Percentage_Schema_Node" onchange="ChangeLogScale('queriesPercentagePerNode','select_queryPercentage_perNode_forschema','log_Percentage_Schema_Node')"/>
+                                                                      <label class="custom-control-label" for="log_Percentage_Schema_Node">log scale</label>
+                                                                    </div>
+                                                              </div>
+                                                              <div class="col-sm-3-plot">
+                                                                    <select class="header-select" name="type" id='select_queryPercentage_perNode_forschema' onchange="ChangePlotType('queriesPercentagePerNode','select_queryPercentage_perNode_forschema')">
+                                                                        <option value="bar group" default>Bar</option>
+                                                                      <option value="scatter markers" >Scatter (markers)</option>
+
+                                                                    </select>
+                                                              </div>
+                                                        </div>
+
+
+                                                      </div>
+
+                                                      <div class="card-body">
+                                                        <!--the plot div -->
+                                                           <div id='queriesPercentagePerNode' >
+                                                               <script>
+                                                                         db = 'CONDBR2';
+                                                                         task = null;
+                                                                         schema = Object.keys(Coolr[db])[0];
+                                                                        getQueryPercPerNode(session_ID, db,schema, task);
+                                                               </script>
+                                                           </div>
+                                                           <hr>
+                                                           <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_queryPerc_Node').value ; console.log(task_id);  var db = document.getElementById('select_input_queryPerc_Node').value; var schema =document.getElementById('select_input_queryPerc_Node_schema').value;  getQueryPercPerNode(session_ID ,db, schema, task_id);" >
+                                                             <div class="form-group row">
+                                                               <div class="col-sm-3 mb-3 mb-sm-1">
+                                                                 <select class="custom-select" name="db" id="select_input_queryPerc_Node" onchange="var db = document.getElementById('select_input_queryPerc_Node').value; DisplaySchemasOptions('select_input_queryPerc_Node_schema', db, Coolr) ; ">
+                                                                   <script>
+                                                                        DisplayDbsOptions('select_input_queryPerc_Node',Coolr);
+                                                                   </script>
+                                                                 </select>
+                                                               </div>
+                                                               <div class="col-sm-3 mb-3 mb-sm-1">
+                                                                 <select class="custom-select" name="schema" id="select_input_queryPerc_Node_schema">
+                                                                   <script>
+                                                                          DisplaySchemasOptions('select_input_queryPerc_Node_schema', db, Coolr)
+                                                                   </script>
+                                                                 </select>
+                                                               </div>
+                                                               <div class="col-sm-3 mb-3 ">
+                                                                 <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id="task_input_queryPerc_Node">
+                                                               </div>
+                                                               <div class="col-sm-3 ">
+                                                                 <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 1%;">
+                                                                   <i class="fas fa-fw fa-chart-area" ></i>
+                                                                 </button>
+                                                               </div>
+                                                             </div>
+                                                           </form>
+
+
+                                                       </div>
+                                                      <!-- end of card body -->
+                                              </div>
+                                               <!-- end of  card -->
+
+                                    </div>
+
+
+              </div>
+          </div>
+
+          <div class='tab-pane'   id='Timedistribution' >
+
+                <div class="row">
+                        <div class="col-lg-12">
+                                  <!-- Time distribution for a given DB queries -->
+                                  <div class="card shadow mb-4">
+
+                                          <div class="card-header py-3">
+                                            <div class='row'>
+                                                  <div class="col-sm-6 mb-2 mb-sm-1">
+                                                          <h6 class="m-0 font-weight-bold text-primary">Time distribution for a given DB queries</h6>
+                                                  </div>
+                                                  <div class="col-sm-3-plot">
+                                                        <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                          <input type="checkbox" class="custom-control-input" id="log_timeDist" name="log_timeDist" onchange="ChangeLogScale('timedistr','select_timeDist','log_timeDist')"/>
+                                                          <label class="custom-control-label" for="log_timeDist">log scale</label>
+                                                        </div>
+                                                  </div>
+                                                  <div class="col-sm-3-plot">
+                                                        <select class="header-select" name="type" id="select_timeDist" onchange="ChangePlotType('timedistr','select_timeDist')">
+                                                          <option value="bar" default>Bar</option>
+                                                          <option value="scatter markers" >Scatter</option>
+                                                        </select>
+                                                  </div>
+                                            </div>
+
+
+                                          </div>
+
+                                          <div class="card-body">
+                                            <!--the plot div -->
+                                               <div id='timedistr'>
+                                                   <script>
+                                                         db = 'CONDBR2';
+                                                         task = null;
+                                                         getTimeDistribution(session_ID, db, task);
+                                                   </script>
+                                               </div>
+                                               <hr>
+                                               <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_timeDist').value ; var db = document.getElementById('select_input_timeDist').value; getTimeDistribution(session_ID ,db, task_id);">
+                                                 <div class="form-group row">
+                                                   <div class="col-sm-3 mb-3 mb-sm-1">
+                                                     <select class="custom-select" name="db" id='select_input_timeDist'>
+                                                       <script>
+                                                             DisplayDbsOptions('select_input_timeDist',Coolr);
+                                                       </script>
+                                                     </select>
+                                                   </div>
+                                                   <div class="col-sm-3 mb-3 ">
+                                                     <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id='task_timeDist'>
+                                                   </div>
+                                                   <div class="col-sm-3 ">
+                                                     <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 1%;">
+                                                       <i class="fas fa-fw fa-chart-area" ></i>
+                                                     </button>
+                                                   </div>
+                                                 </div>
+                                               </form>
+
+
+                                           </div>
+                                          <!-- end of card body -->
+                                  </div>
+                                   <!-- end of  card -->
+
+                        </div>
+                        <!--end column -->
+                         <div class="col-lg-6">
+                                 <!--Count of queries per querytime -->
+                                 <div class="card shadow mb-4">
+
+                                         <div class="card-header py-3">
+                                           <div class='row'>
+                                                 <div class="col-sm-6 mb-2 mb-sm-1">
+                                                       <h6 class="m-0 font-weight-bold text-primary"> Count of queries per querytime</h6>
+                                                 </div>
+                                                 <div class="col-sm-3-plot">
+                                                       <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                         <input type="checkbox" class="custom-control-input" id="log_querytime" name="log_querytime" onchange="ChangeLogScale('queriesQueryTime','select_querytime','log_querytime')"/>
+                                                         <label class="custom-control-label" for="log_querytime">log scale</label>
+                                                       </div>
+                                                 </div>
+                                                 <div class="col-sm-3-plot">
+                                                       <select class="header-select" name="type" id='select_querytime' onchange="ChangePlotType('queriesQueryTime','select_querytime')">
+                                                         <option value="bar group" default>Bar</option>
+                                                         <option value="scatter markers" default>Scatter</option>
+                                                       </select>
+                                                 </div>
+                                           </div>
+
+
+                                         </div>
+
+                                         <div class="card-body">
+                                           <!--the plot div -->
+                                              <div id='queriesQueryTime' >
+                                                  <script>
+                                                        db = 'CONDBR2';
+                                                        task = null;
+                                                        getQueryTime(session_ID, db, task);
+                                                  </script>
+                                              </div>
+                                              <hr>
+                                              <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_querytime').value ; var db = document.getElementById('select_input_querytime').value; getQueryTime(session_ID ,db, task_id);">
+                                                <div class="form-group row">
+                                                  <div class="col-sm-3 mb-3 mb-sm-1">
+                                                    <select class="custom-select" name="db" id='select_input_querytime'>
+                                                      <script>
+                                                             DisplayDbsOptions('select_input_querytime',Coolr);
+                                                      </script>
+                                                    </select>
+                                                  </div>
+                                                  <div class="col-sm-3 mb-3 ">
+                                                    <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id='task_input_querytime'>
+                                                  </div>
+                                                  <div class="col-sm-3 ">
+                                                    <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 3%;">
+                                                      <i class="fas fa-fw fa-chart-area" ></i>
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              </form>
+
+
+                                          </div>
+                                         <!-- end of card body -->
+                                 </div>
+                                  <!-- end of  card -->
+
+                         </div>
+
+                         <!--third column-->
+                         <div class="col-lg-6">
+                                 <!-- Count of queries per dbtime -->
+                                 <div class="card shadow mb-4">
+
+                                         <div class="card-header py-3">
+                                           <div class='row'>
+                                                 <div class="col-sm-6 mb-2 mb-sm-1">
+                                                        <h6 class="m-0 font-weight-bold text-primary"> Count of queries per dbtime</h6>
+                                                 </div>
+                                                 <div class="col-sm-3-plot">
+                                                       <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                         <input type="checkbox" class="custom-control-input" id="log_dbTime" name="log_dbTime" onchange="ChangeLogScale('queriesDBtime','select_dbTime','log_dbTime')"/>
+                                                         <label class="custom-control-label" for="log_dbTime">log scale</label>
+                                                       </div>
+                                                 </div>
+                                                 <div class="col-sm-3-plot">
+                                                       <select class="header-select" name="type" id='select_dbTime' onchange="ChangePlotType('queriesDBtime','select_dbTime')">
+                                                         <option value="bar group" default>Bar</option>
+                                                         <option value="scatter markers">Scatter</option>
+                                                       </select>
+                                                 </div>
+                                           </div>
+
+
+                                         </div>
+
+                                         <div class="card-body">
+                                           <!--the plot div -->
+                                              <div id='queriesDBtime' >
+                                                  <script>
+                                                        db = 'CONDBR2';
+                                                        task = null;
+                                                        getDbTime(session_ID, db, task);
+                                                  </script>
+                                              </div>
+                                              <hr>
+                                              <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_dbtime').value ; var db = document.getElementById('select_input_dbtime').value; getDbTime(session_ID ,db, task_id);">
+                                                <div class="form-group row">
+                                                  <div class="col-sm-3 mb-3 mb-sm-1">
+                                                    <select class="custom-select" name="db" id='select_input_dbtime'>
+                                                      <script>
+                                                            DisplayDbsOptions('select_input_dbtime',Coolr);
+                                                      </script>
+                                                    </select>
+                                                  </div>
+                                                  <div class="col-sm-3 mb-3 ">
+                                                    <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id='task_input_dbtime'>
+                                                  </div>
+                                                  <div class="col-sm-3 ">
+                                                    <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 3%;">
+                                                      <i class="fas fa-fw fa-chart-area" ></i>
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              </form>
+
+
+
+                                          </div>
+                                         <!-- end of card body -->
+                                 </div>
+                                  <!-- end of  card -->
+                         </div>
+
+                  </div>
+
+
+          </div>
+
+          <div  class='tab-pane'  id='Sizedistribution'>
+            <!-- cards container -->
+            <div class="row">
+
+              <!--First column-->
+              <div class="col-lg-12">
+
+                          <!-- Distribution of the response size of a given DB queries -->
+                          <div class="card shadow mb-4">
+
+                                  <div class="card-header py-3">
+                                    <div class='row'>
+                                          <div class="col-sm-6 mb-2 mb-sm-1">
+                                                  <h6 class="m-0 font-weight-bold text-primary"> Distribution of the response size for a given DB queries </h6>
+                                          </div>
+                                          <div class="col-sm-3-plot">
+                                                <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                  <input type="checkbox" class="custom-control-input" id="log_sizeDist" name="log_sizeDist" onchange="ChangeLogScale('sizeDistr','select_sizeDist','log_sizeDist')"/>
+                                                  <label class="custom-control-label" for="log_sizeDist">log scale</label>
+                                                </div>
+                                          </div>
+                                          <div class="col-sm-3-plot">
+                                                <select class="header-select" name="type" id='select_sizeDist' onchange="ChangePlotType('sizeDistr','select_sizeDist')">
+                                                  <option value="bar group" default>Bar</option>
+                                                  <option value="scatter markers">scatter (markers)</option>
+                                                </select>
+                                          </div>
+                                    </div>
+
+
+                                  </div>
+
+                                  <div class="card-body">
+                                    <!--the plot div -->
+                                       <div id='sizeDistr' >
+                                           <script>
+                                                 db = 'CONDBR2';
+                                                 task = null;
+                                                getSizeDistribution(session_ID, db, task);
+                                           </script>
+                                       </div>
+                                       <hr>
+                                       <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_sizeDist').value ; var db = document.getElementById('select_input_sizeDist').value; getSizeDistribution(session_ID ,db, task_id);">
+                                         <div class="form-group row">
+                                           <div class="col-sm-3 mb-3 mb-sm-1">
+                                             <select class="custom-select" name="db" id='select_input_sizeDist'>
+                                               <script>
+                                                       DisplayDbsOptions('select_input_sizeDist',Coolr);
+                                               </script>
+                                             </select>
+                                           </div>
+                                           <div class="col-sm-3 mb-3 ">
+                                             <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id='task_input_sizeDist' >
+                                           </div>
+                                           <div class="col-sm-3 ">
+                                             <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 1%;">
+                                               <i class="fas fa-fw fa-chart-area" ></i>
+                                             </button>
+                                           </div>
+                                         </div>
+                                       </form>
+
+
+                                   </div>
+                                  <!-- end of card body -->
+                          </div>
+                           <!-- end of  card -->
+              </div>
+              <!--second column-->
+              <div class="col-lg-12">
+                         <!-- Distribution of the response size  Per schema -->
+                         <div class="card shadow mb-4">
+
+                                 <div class="card-header py-3">
+                                   <div class='row'>
+                                         <div class="col-sm-6 mb-2 mb-sm-1">
+                                              <h6 class="m-0 font-weight-bold text-primary">  Size percentage per schema </h6>
+                                         </div>
+                                         <div class="col-sm-3-plot">
+                                               <div class="custom-control custom-switch " style="margin-top: 3%;">
+                                                 <input type="checkbox" class="custom-control-input" id="log_Percentage_Size" name="log_Percentage_Size" onchange="ChangeLogScale('sizePercentageSchema','size_Percentage','log_Percentage_Size')"/>
+                                                 <label class="custom-control-label" for="log_Percentage_Size">log scale</label>
+                                               </div>
+                                         </div>
+                                         <div class="col-sm-3-plot">
+                                               <select class="header-select" name="type" id='size_Percentage' onchange="ChangePlotType('sizePercentageSchema','size_Percentage')">
+                                                 <option value="pie none" default>Pie</option>
+                                                <option value="bar group"  >Bar</option>
+                                                 <option value="scatter markers" >Scatter (markers)</option>
+                                               </select>
+                                         </div>
+                                   </div>
+
+
+                                 </div>
+
+                                 <div class="card-body">
+                                   <!--the plot div -->
+                                      <div id='sizePercentageSchema' >
+                                          <script>
+                                              db = 'CONDBR2';
+                                              task = null;
+                                              getSizeDistPerSchema(session_ID, db, task);
+                                          </script>
+                                      </div>
+                                      <hr>
+                                      <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_sizePercentage').value ; var db = document.getElementById('select_input_sizePercentage').value; getSizeDistPerSchema(session_ID ,db, task_id);" >
+                                        <div class="form-group row">
+                                          <div class="col-sm-3 mb-3 mb-sm-1">
+                                            <select class="custom-select" name="db" id='select_input_sizePercentage'>
+                                              <script>
+                                                   DisplayDbsOptions('select_input_sizePercentage',Coolr);
+                                              </script>
+                                            </select>
+                                          </div>
+                                          <div class="col-sm-3 mb-3 ">
+                                            <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id='task_input_sizePercentage'>
+                                          </div>
+                                          <div class="col-sm-3 ">
+                                            <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 1%;">
+                                              <i class="fas fa-fw fa-chart-area" ></i>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </form>
+
+
+                                  </div>
+                                 <!-- end of card body -->
+                         </div>
+                          <!-- end of  card -->
+              </div>
+              <!--First column-->
+              <div class="col-lg-12">
+
+                        <!-- size percentage per Node for a given db/schema-->
+                        <div class="card shadow mb-4">
+
+                                <div class="card-header py-3">
+                                  <div class='row'>
+                                        <div class="col-sm-6 mb-2 mb-sm-1">
+                                              <h6 class="m-0 font-weight-bold text-primary">   size percentage per Node for a given db/schema </h6>
+                                        </div>
+                                        <div class="col-sm-3-plot">
+                                              <div class="custom-control custom-switch " style="margin-top: 2%;">
+                                                <input type="checkbox" class="custom-control-input" id="log_Percentage_Size_Node" name="log_Percentage_Size_Node" onchange="ChangeLogScale('sizePercentageNode','size_PercentageNode','log_Percentage_Size_Node')"/>
+                                                <label class="custom-control-label" for="log_Percentage_Size_Node">log scale</label>
+                                              </div>
+                                        </div>
+                                        <div class="col-sm-3-plot">
+                                              <select class="header-select" name="type" id='size_PercentageNode' onchange="ChangePlotType('sizePercentageNode','size_PercentageNode')">
+                                                  <option value="bar group" default>Bar</option>
+                                                <option value="scatter markers" >Scatter (markers)</option>
+                                                <option value="pie nomode">pie</option>
+
+                                              </select>
+                                        </div>
+                                  </div>
+
+
+                                </div>
+
+                                <div class="card-body">
+                                  <!--the plot div -->
+                                     <div id='sizePercentageNode' >
+                                         <script>
+                                                 db = 'CONDBR2';
+                                                 task = null;
+                                                 schema = Object.keys(Coolr[db])[0];
+                                                  getSizeDistPerNode(session_ID, db,schema ,task);
+                                         </script>
+                                     </div>
+                                     <hr>
+                                     <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_sizePerc_Node').value ; var db = document.getElementById('select_input_sizePerc_Node').value; var schema =document.getElementById('select_input_sizePerc_Node_schema').value;  getSizeDistPerNode(session_ID ,db, schema, task_id);" >
+                                       <div class="form-group row">
+                                         <div class="col-sm-3 mb-3 mb-sm-1">
+                                           <select class="custom-select" name="db" id="select_input_sizePerc_Node" onchange="var db = document.getElementById('select_input_sizePerc_Node').value; DisplaySchemasOptions('select_input_sizePerc_Node_schema', db, Coolr) ; ">
+                                             <script>
+                                                  DisplayDbsOptions('select_input_sizePerc_Node',Coolr);
+                                             </script>
+                                           </select>
+                                         </div>
+                                         <div class="col-sm-3 mb-3 mb-sm-1">
+                                           <select class="custom-select" name="schema" id="select_input_sizePerc_Node_schema">
+                                             <script>
+                                                    DisplaySchemasOptions('select_input_sizePerc_Node_schema', db, Coolr)
+                                             </script>
+                                           </select>
+                                         </div>
+                                         <div class="col-sm-3 mb-3 ">
+                                           <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id="task_input_sizePerc_Node">
+                                         </div>
+                                         <div class="col-sm-3 ">
+                                           <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 1%;">
+                                             <i class="fas fa-fw fa-chart-area" ></i>
+                                           </button>
+                                         </div>
+                                       </div>
+                                     </form>
+
+
+                                 </div>
+                                <!-- end of card body -->
+                        </div>
+                         <!-- end of  card -->
+                  </div>
+              </div>
+          </div>
+
+          <div class='tab-pane'  id='Highquerytime'>
+
+            <!-- cards container -->
+            <div class="row">
+
+                    <!--First column-->
+                    <div class="col-lg-12">
+
+                              <!-- High query time distribution -->
+                              <div class="card shadow mb-4">
+
+                                      <div class="card-header py-3">
+                                        <div class='row'>
+                                              <div class="col-sm-6 mb-2 mb-sm-1">
+                                                    <h6 class="m-0 font-weight-bold text-primary"> High query time distribution per Schema </h6>
+                                              </div>
+                                              <div class="col-sm-3-plot">
+                                                    <div class="custom-control custom-switch " style="margin-top: 2%;">
+                                                      <input type="checkbox" class="custom-control-input" id="log_HighQuery_Schema" name="log_HighQuery_Schema" onchange="ChangeLogScale('highQueryTimeSchema','select_HighQuery_schema','log_HighQuery_Schema')"/>
+                                                      <label class="custom-control-label" for="log_HighQuery_Schema">log scale</label>
+                                                    </div>
+                                              </div>
+                                              <div class="col-sm-3-plot">
+                                                    <select class="header-select" name="type" id='select_HighQuery_schema' onchange="ChangePlotType('highQueryTimeSchema','select_HighQuery_schema')">
+                                                      <option value="scatter markers" default>Scatter (markers)</option>
+                                                      <option value="bar group">Bar</option>
+                                                    </select>
+                                              </div>
+                                        </div>
+
+
+                                      </div>
+
+                                      <div class="card-body">
+                                        <!--the plot div -->
+                                           <div id='highQueryTimeSchema' >
+                                               <script>
+                                                       db = 'CONDBR2';
+                                                       task = null;
+                                                        getHighQueryPerSchema(session_ID,db, task)
+                                               </script>
+                                           </div>
+                                           <hr>
+                                           <form class="user" method="post"  onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_HighQuery_Schema').value ; var db = document.getElementById('select_input_HighQuery_Schema').value; getHighQueryPerSchema(session_ID ,db, task_id);" >
+                                             <div class="form-group row">
+                                               <div class="col-sm-3 mb-3 mb-sm-1">
+                                                 <select class="custom-select" name="db" id="select_input_HighQuery_Schema">
+                                                   <script>
+                                                          DisplayDbsOptions('select_input_HighQuery_Schema',Coolr);
+                                                   </script>
+                                                 </select>
+                                               </div>
+                                               <div class="col-sm-3 mb-3 ">
+                                                 <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id="task_input_HighQuery_Schema">
+                                               </div>
+                                               <div class="col-sm-3 ">
+                                                 <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 1%;">
+                                                   <i class="fas fa-fw fa-chart-area" ></i>
+                                                 </button>
+                                               </div>
+                                             </div>
+                                           </form>
+
+
+                                       </div>
+                                      <!-- end of card body -->
+                              </div>
+                               <!-- end of  card -->
+
+                        </div>
+
+
+                                <!--First column-->
+                                <div class="col-lg-12">
+
+                                          <!-- High query time distribution -->
+                                          <div class="card shadow mb-4">
+
+                                                  <div class="card-header py-3">
+                                                    <div class='row'>
+                                                          <div class="col-sm-6 mb-2 mb-sm-1">
+                                                                <h6 class="m-0 font-weight-bold text-primary"> High query time distribution per Node for a given schema </h6>
+                                                          </div>
+                                                          <div class="col-sm-3-plot">
+                                                                <div class="custom-control custom-switch " style="margin-top: 2%;">
+                                                                  <input type="checkbox" class="custom-control-input" id="log_HighQuery_Node" name="log_HighQuery_Node" onchange="ChangeLogScale('highQueryTimeNode','select_HighQuery_Node','log_HighQuery_Node')"/>
+                                                                  <label class="custom-control-label" for="log_HighQuery_Node">log scale</label>
+                                                                </div>
+                                                          </div>
+                                                          <div class="col-sm-3-plot">
+                                                                <select class="header-select" name="type" id='select_HighQuery_Node' onchange="ChangePlotType('highQueryTimeNode','select_HighQuery_Node')">
+                                                                  <option value="scatter markers" default>Scatter (markers)</option>
+                                                                  <option value="bar group">Bar</option>
+                                                                </select>
+                                                          </div>
+                                                    </div>
+
+
+                                                  </div>
+
+                                                  <div class="card-body">
+                                                    <!--the plot div -->
+                                                       <div id='highQueryTimeNode' >
+                                                           <script>
+                                                                   db = 'CONDBR2';
+                                                                   task = null;
+                                                                   schema = Object.keys(Coolr[db])[0];
+                                                                    getHighQueryPerNode(session_ID,db,schema, task)
+                                                           </script>
+                                                       </div>
+                                                       <hr>
+                                                       <form class="user" method="post" onsubmit="event.preventDefault(); var task_id = document.getElementById('task_input_HighQuery_Node').value ; var db = document.getElementById('select_input_HighQuery_Node').value; var schema =document.getElementById('select_input_HighQuery_Node_schema').value;  getHighQueryPerNode(session_ID ,db, schema, task_id);" >
+                                                         <div class="form-group row">
+                                                           <div class="col-sm-3 mb-3 mb-sm-1">
+                                                             <select class="custom-select" name="db" id="select_input_HighQuery_Node" onchange="var db = document.getElementById('select_input_HighQuery_Node').value; DisplaySchemasOptions('select_input_HighQuery_Node_schema', db, Coolr) ; ">
+                                                               <script>
+                                                                    DisplayDbsOptions('select_input_HighQuery_Node',Coolr);
+                                                               </script>
+                                                             </select>
+                                                           </div>
+                                                           <div class="col-sm-3 mb-3 mb-sm-1">
+                                                             <select class="custom-select" name="schema" id="select_input_HighQuery_Node_schema">
+                                                               <script>
+                                                                      DisplaySchemasOptions('select_input_HighQuery_Node_schema', db, Coolr)
+                                                               </script>
+                                                             </select>
+                                                           </div>
+                                                           <div class="col-sm-3 mb-3 ">
+                                                             <input type="number" class="form-control form-control-user" name="task_id" placeholder="Task ID" id="task_input_HighQuery_Node">
+                                                           </div>
+                                                           <div class="col-sm-3 ">
+                                                             <button type="submit"  class="btn btn-primary" title="refresh the plot" style="margin-top: 1%;">
+                                                               <i class="fas fa-fw fa-chart-area" ></i>
+                                                             </button>
+                                                           </div>
+                                                         </div>
+                                                       </form>
+
+
+                                                   </div>
+                                                  <!-- end of card body -->
+                                          </div>
+                                           <!-- end of  card -->
+
+                                    </div>
+            </div>
+
+          </div>
+
+      </div>
+
+
+
+      </div>
+      <!-- End of Main Content -->
+
+      <!-- Footer -->
+      <footer class="sticky-footer bg-white">
+        <div class="container my-auto">
+          <div class="copyright text-center my-auto">
+            <span>ATLAS &copy; Frontier Analytics 2019</span>
+          </div>
+        </div>
+      </footer>
+      <!-- End of Footer -->
+
+    </div>
+    <!-- End of Content Wrapper -->
+
+  </div>
+  <!-- End of Page Wrapper -->
+
+  <!-- Scroll to Top Button-->
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+
+
+
+</body>
+
+</html>

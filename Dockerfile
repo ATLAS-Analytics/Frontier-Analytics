@@ -16,7 +16,7 @@ WORKDIR /home/${USR}
 RUN pip3 install --no-cache-dir "git+https://${CERN_USER}:${CERN_PASS}@gitlab.cern.ch/formica/coolR.git#egg=coolr&subdirectory=coolR-client/python"
 
 #install analytics packages
-COPY Analytics /home/${USR}/Analytics
+# COPY Analytics /home/${USR}/Analytics   ILIJA NOT SURE THIS IS NEEDED
 
 
 # copy templates and static files into the workDIR
