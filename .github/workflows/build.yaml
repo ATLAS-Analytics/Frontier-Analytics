@@ -29,3 +29,11 @@ jobs:
           repository: ATLAS-Analytics/Frontier-Analytics
           event-type: gitops-frontier-analysis-trigger
           client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.FRONTIER_DEPLOYMENT_TOKEN }}
+          repository: ATLAS-Analytics/Frontier-deployment
+          event-type: gitops-frontier-analytics-trigger
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
