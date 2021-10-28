@@ -5,13 +5,11 @@ from FrontierData.CachingEfficiency import *
 from FrontierData.Config.settings import *
 
 
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL'),
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND')
+CELERY_URL = os.environ.get('CELERY_URL')
 
-print("tasks CELERY_BROKER_URL", CELERY_BROKER_URL)
-print("tasks CELERY_RESULT_BACKEND", CELERY_RESULT_BACKEND)
+print("tasks CELERY_URL", CELERY_URL)
 
-celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND, redis_socket_connect_timeout=60)
+celery = Celery('tasks', broker=CELERY_URL, backend=CELERY_URL, redis_socket_connect_timeout=60)
 config_variable = os.environ.get('CONFIG_FILE')
 
 
@@ -19,7 +17,8 @@ config_variable = os.environ.get('CONFIG_FILE')
 def extractESdata(self, param, parquet_path):
     setg = Settings(config_variable)
     path = parquet_path + '/' + param["parquetname"]
-    extractElasticSearchData(param['Task_id'], param['Since'], param['Until'], param['Cached'], path, setg, self)
+    extractElasticSearchData(param['Task_id'], param['Since'],
+                             param['Until'], param['Cached'], path, setg, self)
 
 
 @celery.task(bind=True, name='tasks.stop')
