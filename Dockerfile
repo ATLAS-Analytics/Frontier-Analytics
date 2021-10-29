@@ -8,6 +8,7 @@ ARG CERN_PASS
 
 # set up environment variables
 # ENV USR frntmon
+RUN mkdir /app
 WORKDIR /app
 
 # Python packages
@@ -23,7 +24,7 @@ RUN pip3 install --no-cache-dir "git+https://${CERN_USER}:${CERN_PASS}@gitlab.ce
 # COPY FrontierAnalyticsApp.py  /home/${USR}/
 
 
-COPY Analytics /app
+COPY Analytics /app/
 COPY templates /app/templates
 COPY static /app/static
 COPY ./worker.py /app
