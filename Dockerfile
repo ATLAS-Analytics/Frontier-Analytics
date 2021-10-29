@@ -4,23 +4,30 @@ ARG CERN_USER
 ARG CERN_PASS
 
 # Add the user UID:1000, GID:1000, home at /app
-RUN groupadd -r frntmon -g 1000 && useradd -u 1000 -r -g frntmon -m -d /home/frntmon -s /sbin/nologin -c "Frontier user" frntmon && chmod 755 /home/frntmon
+# RUN groupadd -r frntmon -g 1000 && useradd -u 1000 -r -g frntmon -m -d /home/frntmon -s /sbin/nologin -c "Frontier user" frntmon && chmod 755 /home/frntmon
 
 # set up environment variables
-ENV USR frntmon
-WORKDIR /home/${USR}
+# ENV USR frntmon
+# WORKDIR /home/${USR}
 
 # Python packages
 RUN pip3 install --no-cache-dir "git+https://${CERN_USER}:${CERN_PASS}@gitlab.cern.ch/formica/coolR.git#egg=coolr&subdirectory=coolR-client/python"
 
-# install analytics packages
-COPY Analytics /home/${USR}/Analytics
+# # install analytics packages
+# COPY Analytics /home/${USR}/Analytics
 
-# copy templates and static files into the workDIR
-COPY templates /home/${USR}/templates
-COPY static /home/${USR}/static
-COPY ./worker.py /home/${USR}/
-COPY FrontierAnalyticsApp.py  /home/${USR}/
+# # copy templates and static files into the workDIR
+# COPY templates /home/${USR}/templates
+# COPY static /home/${USR}/static
+# COPY ./worker.py /home/${USR}/
+# COPY FrontierAnalyticsApp.py  /home/${USR}/
+
+
+COPY Analytics /
+COPY templates /templates
+COPY static /static
+COPY ./worker.py /
+COPY FrontierAnalyticsApp.py  /
 
 ENV C_FORCE_ROOT true
 ENV HOST 0.0.0.0
