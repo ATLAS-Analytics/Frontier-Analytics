@@ -24,10 +24,10 @@ RUN pip3 install --no-cache-dir "git+https://${CERN_USER}:${CERN_PASS}@gitlab.ce
 # COPY FrontierAnalyticsApp.py  /home/${USR}/
 
 
-COPY Analytics /app/
+COPY Analytics /app/Analytics
 COPY templates /app/templates
 COPY static /app/static
-COPY ./worker.py /app
+COPY worker.py /app
 COPY FrontierAnalyticsApp.py  /app
 
 ENV C_FORCE_ROOT true
