@@ -3,7 +3,6 @@ FROM atlasanalyticsservice/frontier_base
 ARG CERN_USER
 ARG CERN_PASS
 
-
 # Add the user UID:1000, GID:1000, home at /app
 RUN groupadd -r frntmon -g 1000 && useradd -u 1000 -r -g frntmon -m -d /home/frntmon -s /sbin/nologin -c "Frontier user" frntmon && chmod 755 /home/frntmon
 
