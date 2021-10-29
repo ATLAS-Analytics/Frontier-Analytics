@@ -8,7 +8,7 @@ ARG CERN_PASS
 
 # set up environment variables
 # ENV USR frntmon
-# WORKDIR /home/${USR}
+WORKDIR /app
 
 # Python packages
 RUN pip3 install --no-cache-dir "git+https://${CERN_USER}:${CERN_PASS}@gitlab.cern.ch/formica/coolR.git#egg=coolr&subdirectory=coolR-client/python"
@@ -23,11 +23,11 @@ RUN pip3 install --no-cache-dir "git+https://${CERN_USER}:${CERN_PASS}@gitlab.ce
 # COPY FrontierAnalyticsApp.py  /home/${USR}/
 
 
-COPY Analytics /
-COPY templates /templates
-COPY static /static
-COPY ./worker.py /
-COPY FrontierAnalyticsApp.py  /
+COPY Analytics /app
+COPY templates /app/templates
+COPY static /app/static
+COPY ./worker.py /app
+COPY FrontierAnalyticsApp.py  /app
 
 ENV C_FORCE_ROOT true
 ENV HOST 0.0.0.0
@@ -36,7 +36,7 @@ ENV DEBUG true
 
 ENV PYTHONPATH ${SPARK_HOME}/python:${SPARK_HOME}/python/lib/py4j-0.10.7-src.zip:${PYTHONPATH}
 EXPOSE 5000
-CMD ["python3", "FrontierAnalyticsApp.py"]
+CMD ["python3", "/app/FrontierAnalyticsApp.py"]
 
 
 
