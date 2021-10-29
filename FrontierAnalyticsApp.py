@@ -13,8 +13,6 @@ import atexit
 import json
 from stat import S_ISREG, ST_CTIME, ST_MODE
 from apscheduler.schedulers.background import BackgroundScheduler
-# import pandas as pd
-# import pyarrow.parquet as pq
 import logging
 
 '''
