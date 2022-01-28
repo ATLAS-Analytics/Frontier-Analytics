@@ -1,3 +1,4 @@
+from socket import timeout
 import dateutil
 from elasticsearch import Elasticsearch, helpers
 from .parseQueries import *
@@ -77,7 +78,7 @@ def extractElasticSearchData(taskid, from_timestamp, to_timestamp, cached, outpu
 
     try:
         # scan from ES
-        res = helpers.scan(es, query=my_query, index=settings.frontier_index)
+        res = helpers.scan(es, query=my_query, index=settings.frontier_index, timeout=60)
         data = []
         counter = 0
         writer = None
