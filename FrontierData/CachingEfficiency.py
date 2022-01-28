@@ -151,8 +151,8 @@ def caching_efficiency_data(settings):
     # connect es
     es = Elasticsearch([{'host': settings.es_server, 'port': settings.es_port}],
                        scheme="https", http_auth=(settings.es_user, settings.es_pswd),
-                       timeout=60, max_retries=10, retry_on_timeout=True,
-                       sniff_on_start=True, sniff_on_connection_fail=True, sniffer_timeout=60)
+                       timeout=60, max_retries=10, retry_on_timeout=True)
+    #    sniff_on_start=True, sniff_on_connection_fail=True, sniffer_timeout=60)
     res = helpers.scan(es, query={}, index=settings.cachingEfficiency_index)
     output = []
     for r in res:
@@ -165,8 +165,8 @@ def write_caching_efficiency_data(df, data, settings, SparkSql):
         # connect to elasticsearch
         es = Elasticsearch([{'host': settings.es_server, 'port': settings.es_port}],
                            scheme="https", http_auth=(settings.es_user, settings.es_pswd),
-                           timeout=60, max_retries=10, retry_on_timeout=True,
-                           sniff_on_start=True, sniff_on_connection_fail=True, sniffer_timeout=60)
+                           timeout=60, max_retries=10, retry_on_timeout=True)
+        #    sniff_on_start=True, sniff_on_connection_fail=True, sniffer_timeout=60)
         # write the data into elastic search
         for i in range(len(data['folders'])):
             doc = {

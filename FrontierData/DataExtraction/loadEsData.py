@@ -23,8 +23,8 @@ def extractElasticSearchData(taskid, from_timestamp, to_timestamp, cached, outpu
     # connect es
     es = Elasticsearch([{'host': settings.es_server, 'port': settings.es_port}],
                        scheme="https", http_auth=(settings.es_user, settings.es_pswd),
-                       timeout=60, max_retries=10, retry_on_timeout=True,
-                       sniff_on_start=True, sniff_on_connection_fail=True, sniffer_timeout=60)
+                       timeout=60, max_retries=10, retry_on_timeout=True)
+    #    sniff_on_start=True, sniff_on_connection_fail=True, sniffer_timeout=60)
 
     # prepare a query for searching inside the ES server
     my_query = {
