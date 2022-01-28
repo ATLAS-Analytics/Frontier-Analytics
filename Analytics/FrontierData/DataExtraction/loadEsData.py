@@ -1,3 +1,4 @@
+from socket import timeout
 import dateutil
 from elasticsearch import Elasticsearch, helpers
 from .parseQueries import *
@@ -22,7 +23,8 @@ def extractElasticSearchData(taskid, from_timestamp, to_timestamp, cached, outpu
 
     # connect es
     es = Elasticsearch([{'host': settings.es_server, 'port': settings.es_port}],
-                       scheme="https", http_auth=(settings.es_user, settings.es_pswd))
+                       scheme="https", http_auth=(settings.es_user, settings.es_pswd),
+                       timeout=60, max_retries=10, retry_on_timeout=True)
 
     # prepare a query for searching inside the ES server
     my_query = {
