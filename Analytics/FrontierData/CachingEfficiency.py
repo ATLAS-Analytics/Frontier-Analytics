@@ -152,7 +152,7 @@ def caching_efficiency_data(settings):
     es = Elasticsearch([{'host': settings.es_server, 'port': settings.es_port}],
                        scheme="https", http_auth=(settings.es_user, settings.es_pswd),
                        timeout=60, max_retries=10, retry_on_timeout=True)
-    res = helpers.scan(es, query={}, index=settings.cachingEfficiency_index)
+    res = helpers.scan(es, query={}, index=settings.cachingEfficiency_index, timeout=30)
     output = []
     for r in res:
         output.append(r['_source'])
